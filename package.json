@@ -1,0 +1,29 @@
+{
+  "name": "fast-grc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A real GRC app, shipped fast and safely with AI",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "stamp": "node scripts/stamp-version.mjs",
+    "dev": "npm run stamp && nest start --watch",
+    "build": "npm run stamp && nest build",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.3.2",
+    "@nestjs/core": "^12.3.2",
+    "@nestjs/platform-express": "^12.3.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.11",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.2",
+    "typescript": "~6.0.2"
+  }
+}
