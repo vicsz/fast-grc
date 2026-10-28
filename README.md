@@ -2,9 +2,9 @@
 
 A real GRC app, shipped fast and safely with AI: deterministic guardrails around a non-deterministic tool.
 
-> Early days. A NestJS API and a React page, one deployable, growing one small step at a time.
+> Early days. Org units: a NestJS API, a React page and Postgres, one deployable, growing one small step at a time.
 
-**Stack:** TypeScript everywhere · NestJS · React (Vite) · Azure App Service · Bicep · GitHub Actions
+**Stack:** TypeScript everywhere · NestJS · React (Vite) · Postgres 18 + Drizzle · Azure App Service · Bicep · GitHub Actions
 
 ## Run locally
 
@@ -12,8 +12,20 @@ Requires Node 24 (`.nvmrc`).
 
 ```bash
 npm install
+npm run db:up   # Postgres 18 in a container (Docker CLI + Colima, no Docker Desktop)
 npm run dev     # API on :3000 and the React app on http://localhost:5173
 ```
+
+## Database
+
+Postgres 18 with Drizzle. Migrations in `drizzle/` are forward-only and run automatically when the app starts, under an advisory lock, followed by seed data if the database is empty.
+
+```bash
+npm run db:generate   # create a migration from changes to src/db/schema.ts
+npm run db:reset      # recreate the local database, migrate and seed (about 2 seconds)
+```
+
+**Rollback** is reset and replay: deploy the older build and rebuild the database from its migrations. If an app starts against a database that is ahead of its migrations, it refuses to start, unless `DB_RESET_ON_DRIFT=true` (dev only), in which case it resets and replays.
 
 - `/health` — liveness
 - `/version` — what's running and who built it (also shown in the page footer)

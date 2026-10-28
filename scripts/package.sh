@@ -8,7 +8,7 @@ version=$(node -p "require('./build-info.json').version")
 
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
-cp -R dist build-info.json package.json package-lock.json "$stage/"
+cp -R dist drizzle build-info.json package.json package-lock.json "$stage/"
 (cd "$stage" && npm ci --omit=dev --ignore-scripts --silent)
 
 mkdir -p out
