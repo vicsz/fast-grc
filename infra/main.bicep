@@ -15,6 +15,51 @@ param appName string = 'fast-grc-${env}'
 @allowed(['F1', 'B1'])
 param planSku string = 'F1'
 
+@secure()
+@description('Postgres admin password; generated once by scripts/deploy.sh and kept only in app settings')
+param dbPassword string
+
+var dbAdmin = 'fastgrc'
+var dbName = 'fast_grc_${env}'
+
+// Free-offer shape only: Burstable B1ms, 32 GB, no storage auto-grow, no HA, no geo backup.
+resource pg 'Microsoft.DBforPostgreSQL/flexibleServers@2025-08-01' = {
+  name: 'fast-grc-pg'
+  location: resourceGroup().location
+  sku: { name: 'Standard_B1ms', tier: 'Burstable' }
+  properties: {
+    version: '18'
+    administratorLogin: dbAdmin
+    administratorLoginPassword: dbPassword
+    storage: { storageSizeGB: 32, autoGrow: 'Disabled' }
+    backup: { backupRetentionDays: 7, geoRedundantBackup: 'Disabled' }
+    highAvailability: { mode: 'Disabled' }
+    network: { publicNetworkAccess: 'Enabled' }
+  }
+}
+
+// Azure only allows extensions on this list; btree_gist backs the time-range constraints.
+resource pgExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2025-08-01' = {
+  parent: pg
+  name: 'azure.extensions'
+  properties: { value: 'BTREE_GIST', source: 'user-override' }
+}
+
+// Only Azure-hosted services (including App Service) can connect, not the whole internet.
+resource pgAzureAccess 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2025-08-01' = {
+  parent: pg
+  name: 'AllowAzureServices'
+  properties: { startIpAddress: '0.0.0.0', endIpAddress: '0.0.0.0' }
+}
+
+// One database per environment on the shared server.
+resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2025-08-01' = {
+  parent: pg
+  name: dbName
+  dependsOn: [pgExtensions]
+  properties: { charset: 'UTF8', collation: 'en_US.utf8' }
+}
+
 resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: 'fast-grc-plan'
   location: appLocation
@@ -38,6 +83,12 @@ resource app 'Microsoft.Web/sites@2024-04-01' = {
       minTlsVersion: '1.2'
       appSettings: [
         { name: 'APP_ENV', value: env }
+        {
+          name: 'DATABASE_URL'
+          value: 'postgres://${dbAdmin}:${dbPassword}@${pg.properties.fullyQualifiedDomainName}:5432/${database.name}?sslmode=require'
+        }
+        // dev resets and replays when an older build is deployed; other environments refuse.
+        { name: 'DB_RESET_ON_DRIFT', value: string(env == 'dev') }
         // The zip is a complete, prebuilt artifact: no build on the server.
         { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'false' }
       ]

@@ -1,17 +1,34 @@
 #!/usr/bin/env bash
 # Provision, deploy a packaged build, and wait until it is live.
-# Usage: npm run deploy -- <env> [path/to/fast-grc-<version>.zip]
+# Usage: npm run deploy -- <env> [path/to/fast-grc-<version>.zip] [--reset-db]
 # Without a zip it packages the working tree first. Same script locally and in CI.
+# --reset-db (dev only) drops and recreates the environment's database before deploying;
+# the app then migrates and seeds on startup. Deploying an older build with it is a rollback.
 set -euo pipefail
 
-ENV="${1:?usage: npm run deploy -- <dev|demo> [zip]}"
-ZIP="${2:-}"
+ENV="${1:?usage: npm run deploy -- <dev|demo> [zip] [--reset-db]}"
+shift
+ZIP=""
+RESET_DB=false
+for arg in "$@"; do
+  case "$arg" in
+    --reset-db) RESET_DB=true ;;
+    *) ZIP="$arg" ;;
+  esac
+done
+
 RG="${FAST_GRC_RG:-fast-grc-rg}"
 LOCATION="${FAST_GRC_LOCATION:-canadacentral}"
-APP="${FAST_GRC_APP_PREFIX:-fast-grc}-$ENV"
+PREFIX="${FAST_GRC_APP_PREFIX:-fast-grc}"
+APP="$PREFIX-$ENV"
+DB="fast_grc_$ENV"
 
 if [[ "$ENV" != "dev" && "${GITHUB_ACTIONS:-}" != "true" ]]; then
   echo "Local deploys target dev only; $ENV is promoted from CI." >&2
+  exit 1
+fi
+if [[ "$RESET_DB" == true && "$ENV" != "dev" ]]; then
+  echo "--reset-db is dev only." >&2
   exit 1
 fi
 
@@ -23,10 +40,32 @@ if [[ -z "$ZIP" ]]; then
 fi
 version=$(unzip -p "$ZIP" build-info.json | node -pe "JSON.parse(require('fs').readFileSync(0)).version")
 
+# The database password lives only in the apps' DATABASE_URL setting. Reuse it if any
+# environment already has one; otherwise generate it (upper, lower and digits for Azure's rules).
+db_password() {
+  for app in "$PREFIX-dev" "$PREFIX-demo"; do
+    local url
+    url=$(az webapp config appsettings list -g "$RG" -n "$app" \
+      --query "[?name=='DATABASE_URL'].value | [0]" -o tsv 2>/dev/null || true)
+    if [[ -n "$url" ]]; then
+      node -e "console.log(decodeURIComponent(new URL(process.argv[1]).password))" "$url"
+      return
+    fi
+  done
+  echo "Fg$(openssl rand -hex 16)9"
+}
+
 echo "==> Provision $RG/$APP"
 az group create -n "$RG" -l "$LOCATION" -o none
 url=$(az deployment group create -g "$RG" -f infra/main.bicep \
-  -p env="$ENV" appName="$APP" --query properties.outputs.url.value -o tsv)
+  -p env="$ENV" appName="$APP" dbPassword="$(db_password)" \
+  --query properties.outputs.url.value -o tsv)
+
+if [[ "$RESET_DB" == true ]]; then
+  echo "==> Reset database $DB"
+  az postgres flexible-server db delete -g "$RG" -s fast-grc-pg -d "$DB" --yes -o none
+  az postgres flexible-server db create -g "$RG" -s fast-grc-pg -d "$DB" -o none
+fi
 
 echo "==> Deploy $version to $url"
 az webapp deploy -g "$RG" -n "$APP" --src-path "$ZIP" --type zip -o none
