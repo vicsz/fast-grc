@@ -4,7 +4,10 @@ targetScope = 'resourceGroup'
 @allowed(['dev', 'demo'])
 param env string
 
-param location string = resourceGroup().location
+// New subscriptions get region-specific quotas: this one has App Service F1 quota in
+// Canada East but not Canada Central, and Postgres only in Canada Central (the resource
+// group's region). Both stay in Canada; co-locate later by requesting F1 quota.
+param appLocation string = 'canadaeast'
 
 @description('Globally unique; becomes https://<appName>.azurewebsites.net')
 param appName string = 'fast-grc-${env}'
@@ -14,7 +17,7 @@ param planSku string = 'F1'
 
 resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: 'fast-grc-plan'
-  location: location
+  location: appLocation
   kind: 'linux'
   sku: { name: planSku }
   properties: { reserved: true }
@@ -22,7 +25,7 @@ resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
 
 resource app 'Microsoft.Web/sites@2024-04-01' = {
   name: appName
-  location: location
+  location: appLocation
   kind: 'app,linux'
   properties: {
     serverFarmId: plan.id

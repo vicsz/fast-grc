@@ -23,7 +23,7 @@ if [[ -z "$ZIP" ]]; then
 fi
 version=$(unzip -p "$ZIP" build-info.json | node -pe "JSON.parse(require('fs').readFileSync(0)).version")
 
-echo "==> Provision $RG/$APP ($LOCATION)"
+echo "==> Provision $RG/$APP"
 az group create -n "$RG" -l "$LOCATION" -o none
 url=$(az deployment group create -g "$RG" -f infra/main.bicep \
   -p env="$ENV" appName="$APP" --query properties.outputs.url.value -o tsv)
