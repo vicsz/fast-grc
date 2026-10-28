@@ -56,7 +56,11 @@ Local builds are pre-releases, so they sort below CI builds, and they are flagge
 
 ## Deploy to Azure
 
-Requires the Azure CLI, logged in (`az login`). No containers, no Kubernetes: a prebuilt zip on App Service.
+No containers, no Kubernetes: a prebuilt zip on App Service.
+
+**From CI:** every push to `main` runs the checks, packages `fast-grc-<version>.zip`, and deploys that exact artifact to dev. GitHub signs in to Azure with OIDC (workload identity federation), so no Azure credentials are stored in GitHub. The `dev` environment only accepts deploys from `main`, and the Azure identity only has access to this app's resource group.
+
+**From a laptop** (Azure CLI, logged in with `az login`), using the same script:
 
 ```bash
 npm run deploy -- dev   # package, provision (Bicep), deploy, wait until /version shows this build
