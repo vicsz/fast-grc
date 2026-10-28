@@ -63,15 +63,15 @@ url=$(az deployment group create -g "$RG" -f infra/main.bicep \
 
 if [[ "$RESET_DB" == true ]]; then
   echo "==> Reset database $DB"
-  # Stop the app so no open connections block dropping the database.
-  az webapp stop -g "$RG" -n "$APP" -o none
+  # Azure drops the database even with the app connected; the deploy restarts the app,
+  # which migrates and seeds the empty database.
   az postgres flexible-server db delete -g "$RG" -s fast-grc-pg -n "$DB" --yes -o none
   az postgres flexible-server db create -g "$RG" -s fast-grc-pg -n "$DB" -o none
-  az webapp start -g "$RG" -n "$APP" -o none
 fi
 
 echo "==> Deploy $version to $url"
-az webapp deploy -g "$RG" -n "$APP" --src-path "$ZIP" --type zip -o none
+# Our /version check below confirms the new build is serving, so skip az's own startup tracking.
+az webapp deploy -g "$RG" -n "$APP" --src-path "$ZIP" --type zip --track-status false -o none
 
 echo "==> Waiting for $version"
 for _ in $(seq 1 60); do
