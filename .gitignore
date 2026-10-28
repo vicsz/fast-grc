@@ -2,3 +2,4 @@ node_modules/
 dist/
 build-info.json
 .DS_Store
+out/

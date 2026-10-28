@@ -11,7 +11,10 @@
     "stamp": "node scripts/stamp-version.mjs",
     "dev": "npm run stamp && nest start --watch",
     "build": "npm run stamp && nest build",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "deploy": "bash scripts/deploy.sh",
+    "destroy": "bash scripts/destroy.sh",
+    "package": "bash scripts/package.sh"
   },
   "dependencies": {
     "@nestjs/common": "^12.3.2",

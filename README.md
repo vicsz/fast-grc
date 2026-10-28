@@ -23,4 +23,25 @@ npm run build
 npm start
 ```
 
-Every build stamps `build-info.json`: local builds are `local-<user>-<timestamp>+<commit>` (flagged `dirty` if there are uncommitted changes); CI builds are `<run number>+<commit>`.
+## Versioning
+
+Every build stamps `build-info.json`, served at `/version`. Versions are semver, with major.minor from `package.json`:
+
+| Built by | Version | Example |
+|---|---|---|
+| CI | `<major>.<minor>.<run number>+<commit>` | `0.1.42+a1b2c3d` |
+| A developer | `<major>.<minor>.0-local.<user>.<UTC time>+<commit>` | `0.1.0-local.victor.20261028T1530Z+a1b2c3d` |
+
+Local builds are pre-releases, so they sort below CI builds, and they are flagged `dirty` if built with uncommitted changes. `npm run package` produces the deployable `out/fast-grc-<version>.zip`.
+
+## Deploy to Azure
+
+Requires the Azure CLI, logged in (`az login`). No containers, no Kubernetes: a prebuilt zip on App Service.
+
+```bash
+npm run deploy -- dev   # package, provision (Bicep), deploy, wait until /version shows this build
+npm run deploy -- dev out/fast-grc-<version>.zip   # deploy an existing artifact
+npm run destroy         # delete the resource group and everything in it
+```
+
+Defaults: resource group `fast-grc-rg` in `canadacentral`, app `fast-grc-<env>` on a shared Free (F1) plan. Override with `FAST_GRC_RG`, `FAST_GRC_LOCATION`, `FAST_GRC_APP_PREFIX`. Local deploys target `dev` only.
