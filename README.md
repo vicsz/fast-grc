@@ -2,7 +2,9 @@
 
 A real GRC app, shipped fast and safely with AI: deterministic guardrails around a non-deterministic tool.
 
-> Early days. Right now this is a hello-world NestJS app with health and version endpoints. It grows one small, deployable step at a time.
+> Early days. A NestJS API and a React page, one deployable, growing one small step at a time.
+
+**Stack:** TypeScript everywhere · NestJS · React (Vite) · Azure App Service · Bicep · GitHub Actions
 
 ## Run locally
 
@@ -10,16 +12,22 @@ Requires Node 24 (`.nvmrc`).
 
 ```bash
 npm install
-npm run dev
+npm run dev     # API on :3000 and the React app on http://localhost:5173
 ```
 
-- http://localhost:3000/health — liveness
-- http://localhost:3000/version — what's running and who built it
+- `/health` — liveness
+- `/version` — what's running and who built it (also shown in the page footer)
+
+## Check
+
+```bash
+npm run check   # type check, lint, format, tests — the same gate CI runs
+```
 
 ## Build
 
 ```bash
-npm run build
+npm run build   # API into dist/, React into dist/web (served by the API)
 npm start
 ```
 

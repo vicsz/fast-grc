@@ -9,13 +9,13 @@
   },
   "scripts": {
     "stamp": "node scripts/stamp-version.mjs",
-    "dev": "npm run stamp && nest start --watch",
-    "build": "npm run stamp && nest build",
+    "dev": "npm run stamp && concurrently -k -n api,web \"nest start --watch\" \"vite\"",
+    "build": "npm run stamp && nest build && vite build",
     "start": "node dist/main.js",
     "deploy": "bash scripts/deploy.sh",
     "destroy": "bash scripts/destroy.sh",
     "package": "bash scripts/package.sh",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json && tsc -p tsconfig.web.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -26,6 +26,7 @@
     "@nestjs/common": "^12.3.2",
     "@nestjs/core": "^12.3.2",
     "@nestjs/platform-express": "^12.3.2",
+    "@nestjs/serve-static": "^12.1.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
@@ -36,13 +37,20 @@
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/supertest": "^7.2.1",
+    "@vitejs/plugin-react-swc": "^4.3.3",
+    "concurrently": "^10.0.6",
     "eslint": "^10.13.0",
     "jest": "^30.5.2",
     "prettier": "^3.9.10",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "supertest": "^7.3.1",
     "ts-jest": "^29.4.15",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.72.1"
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5"
   }
 }
