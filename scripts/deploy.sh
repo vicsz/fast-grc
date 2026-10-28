@@ -63,8 +63,11 @@ url=$(az deployment group create -g "$RG" -f infra/main.bicep \
 
 if [[ "$RESET_DB" == true ]]; then
   echo "==> Reset database $DB"
-  az postgres flexible-server db delete -g "$RG" -s fast-grc-pg -d "$DB" --yes -o none
-  az postgres flexible-server db create -g "$RG" -s fast-grc-pg -d "$DB" -o none
+  # Stop the app so no open connections block dropping the database.
+  az webapp stop -g "$RG" -n "$APP" -o none
+  az postgres flexible-server db delete -g "$RG" -s fast-grc-pg -n "$DB" --yes -o none
+  az postgres flexible-server db create -g "$RG" -s fast-grc-pg -n "$DB" -o none
+  az webapp start -g "$RG" -n "$APP" -o none
 fi
 
 echo "==> Deploy $version to $url"
