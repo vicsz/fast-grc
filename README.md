@@ -27,9 +27,9 @@ npm start
 
 Every build stamps `build-info.json`, served at `/version`. Versions are semver, with major.minor from `package.json`:
 
-| Built by | Version | Example |
-|---|---|---|
-| CI | `<major>.<minor>.<run number>+<commit>` | `0.1.42+a1b2c3d` |
+| Built by    | Version                                              | Example                                     |
+| ----------- | ---------------------------------------------------- | ------------------------------------------- |
+| CI          | `<major>.<minor>.<run number>+<commit>`              | `0.1.42+a1b2c3d`                            |
 | A developer | `<major>.<minor>.0-local.<user>.<UTC time>+<commit>` | `0.1.0-local.victor.20261028T1530Z+a1b2c3d` |
 
 Local builds are pre-releases, so they sort below CI builds, and they are flagged `dirty` if built with uncommitted changes. `npm run package` produces the deployable `out/fast-grc-<version>.zip`.

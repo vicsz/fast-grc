@@ -14,7 +14,13 @@
     "start": "node dist/main.js",
     "deploy": "bash scripts/deploy.sh",
     "destroy": "bash scripts/destroy.sh",
-    "package": "bash scripts/package.sh"
+    "package": "bash scripts/package.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run stamp --silent && NODE_OPTIONS=--experimental-vm-modules jest",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
   },
   "dependencies": {
     "@nestjs/common": "^12.3.2",
@@ -24,9 +30,19 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^12.0.11",
+    "@nestjs/testing": "^12.3.2",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.19.2",
-    "typescript": "~6.0.2"
+    "@types/supertest": "^7.2.1",
+    "eslint": "^10.13.0",
+    "jest": "^30.5.2",
+    "prettier": "^3.9.10",
+    "supertest": "^7.3.1",
+    "ts-jest": "^29.4.15",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.72.1"
   }
 }

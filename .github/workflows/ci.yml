@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check (types, lint, format, tests)
+        run: npm run check
+
+      - name: Package
+        id: package
+        run: |
+          zip=$(npm run --silent package | tail -1)
+          version=$(node -p "require('./build-info.json').version")
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "### Built \`$version\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: fast-grc-${{ steps.package.outputs.version }}
+          path: ${{ steps.package.outputs.zip }}
+          retention-days: 30
+          if-no-files-found: error
