@@ -11,6 +11,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.package.outputs.version }}
     services:
       # Same Postgres major version as local and Azure; tests create their own database.
       postgres:
@@ -51,3 +53,41 @@ jobs:
           path: ${{ steps.package.outputs.zip }}
           retention-days: 30
           if-no-files-found: error
+
+  # Deploys the artifact the build job just checked: build once, deploy many.
+  deploy-dev:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: https://fast-grc-dev.azurewebsites.net
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    permissions:
+      id-token: write # OIDC: no stored Azure credentials
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: fast-grc-${{ needs.build.outputs.version }}
+          path: artifact
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy
+        run: |
+          bash scripts/deploy.sh dev artifact/fast-grc-*.zip | tee deploy.log
+          echo "### Deployed \`${{ needs.build.outputs.version }}\` to dev" >> "$GITHUB_STEP_SUMMARY"
+          grep '^Live:' deploy.log >> "$GITHUB_STEP_SUMMARY"
