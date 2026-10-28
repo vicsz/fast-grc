@@ -19,6 +19,9 @@ param planSku string = 'F1'
 @description('Postgres admin password; generated once by scripts/deploy.sh and kept only in app settings')
 param dbPassword string
 
+@description('Hash of this template, recorded on the app by scripts/deploy.sh')
+param infraHash string = ''
+
 var dbAdmin = 'fastgrc'
 var dbName = 'fast_grc_${env}'
 
@@ -72,6 +75,8 @@ resource app 'Microsoft.Web/sites@2024-04-01' = {
   name: appName
   location: appLocation
   kind: 'app,linux'
+  // Lets scripts/deploy.sh skip provisioning when this file hasn't changed.
+  tags: { infraHash: infraHash }
   properties: {
     serverFarmId: plan.id
     httpsOnly: true

@@ -64,4 +64,4 @@ npm run deploy -- dev out/fast-grc-<version>.zip   # deploy an existing artifact
 npm run destroy         # delete the resource group and everything in it
 ```
 
-Defaults: resource group `fast-grc-rg` in `canadacentral`; app `fast-grc-<env>` on a shared Free (F1) plan in `canadaeast` (where this subscription has F1 quota). Override with `FAST_GRC_RG`, `FAST_GRC_LOCATION`, `FAST_GRC_APP_PREFIX`. Local deploys target `dev` only.
+Defaults: resource group `fast-grc-rg` in `canadacentral`; app `fast-grc-<env>` on a shared Free (F1) plan in `canadaeast` (where this subscription has F1 quota). Override with `FAST_GRC_RG`, `FAST_GRC_LOCATION`, `FAST_GRC_APP_PREFIX`. Local deploys target `dev` only. Provisioning (Bicep) runs only when `infra/main.bicep` changed since the last deploy (tracked by an `infraHash` tag on the app); set `FORCE_PROVISION=true` to re-apply it anyway.

@@ -55,11 +55,20 @@ db_password() {
   echo "Fg$(openssl rand -hex 16)9"
 }
 
-echo "==> Provision $RG/$APP"
-az group create -n "$RG" -l "$LOCATION" -o none
-url=$(az deployment group create -g "$RG" -f infra/main.bicep \
-  -p env="$ENV" appName="$APP" dbPassword="$(db_password)" \
-  --query properties.outputs.url.value -o tsv)
+# Provision only when the infrastructure changed (or doesn't exist yet): re-applying the
+# template on every deploy is slow and can collide with in-flight database operations.
+infra_hash=$(shasum -a 256 infra/main.bicep | cut -c1-16)
+deployed_hash=$(az webapp show -g "$RG" -n "$APP" --query tags.infraHash -o tsv 2>/dev/null || true)
+if [[ "$deployed_hash" == "$infra_hash" && "${FORCE_PROVISION:-}" != "true" ]]; then
+  echo "==> Infrastructure unchanged ($infra_hash), skipping provisioning"
+  url="https://$(az webapp show -g "$RG" -n "$APP" --query defaultHostName -o tsv)"
+else
+  echo "==> Provision $RG/$APP"
+  az group create -n "$RG" -l "$LOCATION" -o none
+  url=$(az deployment group create -g "$RG" -f infra/main.bicep \
+    -p env="$ENV" appName="$APP" dbPassword="$(db_password)" infraHash="$infra_hash" \
+    --query properties.outputs.url.value -o tsv)
+fi
 
 if [[ "$RESET_DB" == true ]]; then
   echo "==> Reset database $DB"
